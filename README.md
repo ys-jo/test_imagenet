@@ -40,4 +40,4 @@ https://kaiyangzhou.github.io/deep-person-reid/MODEL_ZOO.html
 https://pytorch.org/vision/master/models/mobilenetv3.html  
 https://github.com/clovaai/rexnet  
 https://pytorch.org/hub/pytorch_vision_resnet/  
-https://github.com/hankyul2/EfficientNetV2-pytorch
+https://github.com/lukemelas/EfficientNet-PyTorch
