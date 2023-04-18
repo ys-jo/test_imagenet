@@ -1,0 +1,5 @@
+*.onnx
+*.pth
+*.jpg
+*.txt
+__pycache__/
