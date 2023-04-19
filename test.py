@@ -8,10 +8,14 @@ from efficientnet_pytorch import EfficientNet
 from onnxsim import simplify
 import onnx
 import rexnetv1
+import osnet
+from thop import profile, clever_format
+import numpy as np
+
 
 def argparser():
     parser = argparse.ArgumentParser(description='Measure Accuracy in ImageNet Val')
-    parser.add_argument('--model', default='resnet18', choices=['resnet18','resnet34','resnet50','resnet101', 'resnet152','efficientnet_b0','efficientnet_b1','efficientnet_b2','efficientnet_b3','efficientnet_b4','rexnetv1_1.0','rexnetv1_1.3','rexnetv1_1.5','rexnetv1_2.0','mobilenetv2','mobilenetv3-s','mobilenetv3-l'],
+    parser.add_argument('--model', default='resnet18', choices=['resnet18','resnet34','resnet50','resnet101', 'resnet152','efficientnet_b0','efficientnet_b1','efficientnet_b2','efficientnet_b3','efficientnet_b4','rexnetv1_1.0','rexnetv1_1.3','rexnetv1_1.5','rexnetv1_2.0','mobilenetv2_1.0','mobilenetv2_1.4','mobilenetv3-s','mobilenetv3-l', 'osnet_1.0','osnet_0.75','osnet_0.5', 'osnet_0.25'],
                         help='Detector model name')
     parser.add_argument('--export', default=False,
                         action='store_true',
@@ -44,79 +48,93 @@ if __name__ == "__main__":
     # resnet
     if args.model == 'resnet18':
         model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'resnet34':
         model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet34', pretrained=True)
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'resnet50':
         model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet50', pretrained=True)
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'resnet101':
         model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet101', pretrained=True)
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'resnet152':
         model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet152', pretrained=True)
-        input_size = (224,224)
+        input_sizes = (224,224)
     # efficientnet
     elif args.model == 'efficientnet_b0':
         model = EfficientNet.from_pretrained('efficientnet-b0')
         model.set_swish(memory_efficient=False)
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'efficientnet_b1':
         model = EfficientNet.from_pretrained('efficientnet-b1')
         model.set_swish(memory_efficient=False)
-        input_size = (240,240)
+        input_sizes = (240,240)
     elif args.model == 'efficientnet_b2':
         model = EfficientNet.from_pretrained('efficientnet-b2')
         model.set_swish(memory_efficient=False)
-        input_size = (260,260)
+        input_sizes = (260,260)
     elif args.model == 'efficientnet_b3':
         model = EfficientNet.from_pretrained('efficientnet-b3')
         model.set_swish(memory_efficient=False)
-        input_size = (300,300)
+        input_sizes = (300,300)
     elif args.model == 'efficientnet_b4':
         model = EfficientNet.from_pretrained('efficientnet-b4')
         model.set_swish(memory_efficient=False)
-        input_size = (380,380)
+        input_sizes = (380,380)
     # rexnet
     elif args.model == 'rexnetv1_1.0':
         model = rexnetv1.ReXNetV1(width_mult=1.0)
         model.load_state_dict(torch.load('./rexnetv1_1.0.pth'))
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'rexnetv1_1.3':
         model = rexnetv1.ReXNetV1(width_mult=1.3)
         model.load_state_dict(torch.load('./rexnetv1_1.3.pth'))
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'rexnetv1_1.5':
         model = rexnetv1.ReXNetV1(width_mult=1.5)
         model.load_state_dict(torch.load('./rexnetv1_1.5.pth'))
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'rexnetv1_2.0':
         model = rexnetv1.ReXNetV1(width_mult=2.0)
         model.load_state_dict(torch.load('./rexnetv1_2.0.pth'))
-        input_size = (224,224)
+        input_sizes = (224,224)
     # mobilenet
     elif args.model == 'mobilenetv2_1.0':
         model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'mobilenetv2_1.4':
         model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'mobilenetv3-s':
         model = torchvision.models.mobilenet_v3_small(weights='DEFAULT')
-        input_size = (224,224)
+        input_sizes = (224,224)
     elif args.model == 'mobilenetv3-l':
         model = torchvision.models.mobilenet_v3_large(weights='DEFAULT')
-        input_size = (224,224)
+        input_sizes = (224,224)
     # osnet
-
+    elif args.model == 'osnet_1.0':
+        model = osnet.osnet_x1_0()
+        input_sizes = (224, 224)
+    elif args.model == 'osnet_0.75':
+        model = osnet.osnet_x0_75()
+        input_sizes = (224, 224)
+    elif args.model == 'osnet_0.5':
+        model = osnet.osnet_x0_5()
+        input_sizes = (224, 224)
+    elif args.model == 'osnet_0.25':
+        model = osnet.osnet_x0_25()
+        input_sizes = (224, 224)
     else:
         raise ValueError("no model")
+    input = torch.randn(1, 3, input_sizes[0],  input_sizes[1])
+    flops, params = profile(model, inputs=(input, ))
+    flops, params = clever_format([flops, params], "%.3f")
     model.eval()
 
     # export model
     if args.export:
-        dummy_input = torch.randn(1, 3, input_size[0], input_size[1])
+        dummy_input = torch.randn(1, 3, input_sizes[0], input_sizes[1])
         torch.onnx.export(model, dummy_input, args.model+".onnx", verbose=False, input_names=["input.1"])
         onnx.checker.check_model(args.model+".onnx")
         model_onnx, check = simplify(args.model+".onnx")
@@ -124,14 +142,14 @@ if __name__ == "__main__":
 
     if args.model[:12] == 'efficientnet':
         preprocess = transforms.Compose([
-            transforms.Resize(input_size),
+            transforms.Resize(input_sizes),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
     else:
         preprocess = transforms.Compose([
             transforms.Resize((256,256)),
-            transforms.CenterCrop(input_size),
+            transforms.CenterCrop(input_sizes),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
@@ -157,6 +175,27 @@ if __name__ == "__main__":
             ret1, ret2 = accuracy(probabilities, labels)
             top_1 += ret1
             top_5 += ret2
+
+    # for measure inference time average 100 repetitions
+    repetitions = 100
+    timings = np.zeros((repetitions,1))
+    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+    img = imgs[0].unsqueeze(0)   # 1 image
+    with torch.no_grad():
+        for rep in range(repetitions):
+            starter.record()
+            _ = model(imgs)
+            ender.record()
+            # WAIT FOR GPU SYNC
+            torch.cuda.synchronize()
+            curr_time = starter.elapsed_time(ender)
+            timings[rep] = curr_time
+    print("!! Sumary !!")
+    print(f"FLOPS : {flops}")
+    print(f"params : {params}")
+    print(f"MACs : {float(flops[:-1]) / 2}{flops[-1]}")
+    print("!! average Inference Time !!")
+    print(f"Inference time : {np.mean(timings)}ms")
     print("!! Accuracy !!")
     print(f"top-1 : {round(top_1/500, 2)}")
     print(f"top-5 : {round(top_5/500, 2)}")
