@@ -135,7 +135,7 @@ if __name__ == "__main__":
     # export model
     if args.export:
         dummy_input = torch.randn(1, 3, input_sizes[0], input_sizes[1])
-        torch.onnx.export(model, dummy_input, args.model+".onnx", verbose=False, input_names=["input.1"])
+        torch.onnx.export(model, dummy_input, args.model+".onnx", verbose=False, input_names=["images"])
         onnx.checker.check_model(args.model+".onnx")
         model_onnx, check = simplify(args.model+".onnx")
         onnx.save(model_onnx, args.model+".onnx")
@@ -148,14 +148,14 @@ if __name__ == "__main__":
         ])
     else:
         preprocess = transforms.Compose([
-            transforms.Resize((256,256)),
+            transforms.Resize(256),
             transforms.CenterCrop(input_sizes),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
     testset=torchvision.datasets.ImageFolder(root=args.data_path, transform=preprocess)
-    testloader=torch.utils.data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True)
+    testloader=torch.utils.data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True, drop_last=False)
 
     # move the input and model to GPU for speed if available
     if torch.cuda.is_available():
