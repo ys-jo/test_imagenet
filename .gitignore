@@ -3,3 +3,5 @@
 *.jpg
 *.txt
 __pycache__/
+test_dx_sim.py
+dx_com_result/

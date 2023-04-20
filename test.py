@@ -15,7 +15,7 @@ import numpy as np
 
 def argparser():
     parser = argparse.ArgumentParser(description='Measure Accuracy in ImageNet Val')
-    parser.add_argument('--model', default='resnet18', choices=['resnet18','resnet34','resnet50','resnet101', 'resnet152','efficientnet_b0','efficientnet_b1','efficientnet_b2','efficientnet_b3','efficientnet_b4','rexnetv1_1.0','rexnetv1_1.3','rexnetv1_1.5','rexnetv1_2.0','mobilenetv2_1.0','mobilenetv2_1.4','mobilenetv3-s','mobilenetv3-l', 'osnet_1.0','osnet_0.75','osnet_0.5', 'osnet_0.25'],
+    parser.add_argument('--model', default='resnet18', choices=['resnet18','resnet34','resnet50','resnet101', 'resnet152','efficientnet_b0','efficientnet_b1','efficientnet_b2','efficientnet_b3','efficientnet_b4','rexnetv1_1.0','rexnetv1_1.3','rexnetv1_1.5','rexnetv1_2.0','mobilenetv2','mobilenetv3-s','mobilenetv3-l', 'osnet_1.0','osnet_0.75','osnet_0.5', 'osnet_0.25'],
                         help='Detector model name')
     parser.add_argument('--export', default=False,
                         action='store_true',
@@ -105,10 +105,7 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load('./rexnetv1_2.0.pth'))
         input_sizes = (224,224)
     # mobilenet
-    elif args.model == 'mobilenetv2_1.0':
-        model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
-        input_sizes = (224,224)
-    elif args.model == 'mobilenetv2_1.4':
+    elif args.model == 'mobilenetv2':
         model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
         input_sizes = (224,224)
     elif args.model == 'mobilenetv3-s':
@@ -133,8 +130,8 @@ if __name__ == "__main__":
     else:
         raise ValueError("no model")
     input = torch.randn(1, 3, input_sizes[0],  input_sizes[1])
-    flops, params = profile(model, inputs=(input, ))
-    flops, params = clever_format([flops, params], "%.3f")
+    macs, params = profile(model, inputs=(input, ))
+    macs, params = clever_format([macs, params], "%.3f")
     model.eval()
     print(f" INPUT SIZE : {input_sizes} ")
 
@@ -198,9 +195,9 @@ if __name__ == "__main__":
             curr_time = starter.elapsed_time(ender)
             timings[rep] = curr_time
     print("!! Sumary !!")
-    print(f"FLOPS : {flops}")
+    print(f"MACs : {macs}")
     print(f"params : {params}")
-    print(f"MACs : {float(flops[:-1]) / 2}{flops[-1]}")
+    print(f"FLOPS : {float(macs[:-1]) *2 }{macs[-1]}")
     print("!! average Inference Time !!")
     print(f"Inference time : {np.mean(timings)}ms")
     print("!! Accuracy !!")
