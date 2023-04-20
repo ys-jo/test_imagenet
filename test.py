@@ -65,23 +65,28 @@ if __name__ == "__main__":
     elif args.model == 'efficientnet_b0':
         model = EfficientNet.from_pretrained('efficientnet-b0')
         model.set_swish(memory_efficient=False)
-        input_sizes = (224,224)
+        image_size = EfficientNet.get_image_size('efficientnet-b0') # 224
+        input_sizes = (image_size,image_size)
     elif args.model == 'efficientnet_b1':
         model = EfficientNet.from_pretrained('efficientnet-b1')
         model.set_swish(memory_efficient=False)
-        input_sizes = (240,240)
+        image_size = EfficientNet.get_image_size('efficientnet-b1') # 224
+        input_sizes = (image_size,image_size)
     elif args.model == 'efficientnet_b2':
         model = EfficientNet.from_pretrained('efficientnet-b2')
         model.set_swish(memory_efficient=False)
-        input_sizes = (260,260)
+        image_size = EfficientNet.get_image_size('efficientnet-b2') # 224
+        input_sizes = (image_size,image_size)
     elif args.model == 'efficientnet_b3':
         model = EfficientNet.from_pretrained('efficientnet-b3')
         model.set_swish(memory_efficient=False)
-        input_sizes = (300,300)
+        image_size = EfficientNet.get_image_size('efficientnet-b3') # 224
+        input_sizes = (image_size,image_size)
     elif args.model == 'efficientnet_b4':
         model = EfficientNet.from_pretrained('efficientnet-b4')
         model.set_swish(memory_efficient=False)
-        input_sizes = (380,380)
+        image_size = EfficientNet.get_image_size('efficientnet-b4') # 224
+        input_sizes = (image_size,image_size)
     # rexnet
     elif args.model == 'rexnetv1_1.0':
         model = rexnetv1.ReXNetV1(width_mult=1.0)
@@ -131,18 +136,20 @@ if __name__ == "__main__":
     flops, params = profile(model, inputs=(input, ))
     flops, params = clever_format([flops, params], "%.3f")
     model.eval()
+    print(f" INPUT SIZE : {input_sizes} ")
 
     # export model
     if args.export:
         dummy_input = torch.randn(1, 3, input_sizes[0], input_sizes[1])
-        torch.onnx.export(model, dummy_input, args.model+".onnx", verbose=False, input_names=["images"])
+        torch.onnx.export(model, dummy_input, args.model+".onnx", verbose=False, input_names=['images'], output_names=['output'])
         onnx.checker.check_model(args.model+".onnx")
         model_onnx, check = simplify(args.model+".onnx")
         onnx.save(model_onnx, args.model+".onnx")
 
     if args.model[:12] == 'efficientnet':
         preprocess = transforms.Compose([
-            transforms.Resize(input_sizes),
+            transforms.Resize(input_sizes[0]+32),
+            transforms.CenterCrop(input_sizes),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
